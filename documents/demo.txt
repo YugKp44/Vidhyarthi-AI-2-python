@@ -1,0 +1,93 @@
+
+
+1.
+College_name :BITS Pilani (Pilani Campus), Pilani
+courses: BE , ME , MBA , M.Pharm
+NIRF rank: 25th 2024
+Branches:Chemical Engineering , Civil Engineering , Computer Science , Electrical And Electronics Engineering,Electronics & Communication Engineering, Electronics And Instrumentation Engineering , 
+          Manufacturing Engineering, Mechanical Engineering
+NIRF rank: 25th 2024
+Fee : 6-7 lakh
+City:Pilani, Rajasthan
+Hostel fee: 18,800
+ 
+ 2.
+College_name :Indian Institute of Technology - [IITJ], Jodhpur
+courses: B.Tech ,PG Diploma, M.Tech, Ph.D
+Branches:Computer Science and Engineering , Artificial Intelligence & Data Science,Mechanical Engineering,Civil Infrastructure Engineering,Chemical Engineering,Bioengineering,Material Science Engineering,Electrical Engineering,Materials Engineering
+NIRF rank: 28
+Fee : 2 to 5 lakh
+City:Jodhpur
+Hostel fee: 7250
+
+3. College_name : Malaviya National Institute of Technology - [MNIT], Jaipur
+courses:B.Tech ,M.Tech, Ph.D,MBA,,M.Sc
+Branches:Computer Science and Engineering , Artificial Intelligence & Data Science,Mechanical Engineering,Civil  Engineering,Chemical Engineering , Metallurgical And Materials Engineering , Electronics & Communication Engineering ,Electrical Engineering
+NIRF rank: 62
+Fee :₹1,79,265
+City:Jaipur
+Hostel fee: 20000
+  
+4.
+College_name : Manipal University Jaipur (MUJ)
+courses:B.Tech ,BBA, Ph.D,MBA,M.Sc,BCA
+Branches:Computer Science and Engineering,Computer And Communication Engineering,Biotechnology, Information Technology , Computer Science and Biosciences , Data Sciences,Electrical And Electronics Engineering,Electrical And Computer Engineering,VLSI Design,Civil Engineering
+NIRF rank:64
+Fee :₹3,98,000
+City:Jaipur
+Hostel fee:₹1,96,050
+
+5.
+College_name :The LNM Institute of Information Technology,Jaipur
+courses:B.Tech ,M.Tech, B.Tech+M.Tech, M.S,M.Sc
+Branches:Computer Science and Engineering ,Electronics & Communication Engineering,Mechanical Engineering,Computer And Communication Engineering
+NIRF rank:201-300
+Fee :4,35,400
+City:Jaipur
+Hostel fee:33500
+
+6.
+College_name :Singhania University ,Jhunjhunu, Rajasthan
+courses: B.Tech ,PG Diploma, M.Tech,
+Branches:Aeronautical Engineering, Computer Science and Engineering, Civil Engineering ,Printing Technology,  Electrical Engineering, Mechanical Engineering , Electrical And Electronics Engineering, Agriculture Information Technology , Information Technology ,Biotechnology ,Bioinformatics, Electronics & Communication Engineering,Automobile Engineering
+NIRF rank:
+Fee :42000
+City:Jhunjhunu
+Hostel fee: ₹25,000 - ₹60,000
+ 
+ 7.
+College_name :Jaipur National University - [JNU], Jaipur
+courses:B.Tech , BCA
+Branches:Computer Science and Engineering, Electric Vehicle Technology, Data Sciences , Electronics & Communication Engineering,Electronics And Computer Engineering,Chemical Engineering,Electrical Engineering , Mechanical Engineering , Civil Engineering ,Biomedical Engineering , Food Technology , Biotechnology
+NIRF rank: 72
+Fee :₹1,09,023
+City:Jaipur
+Hostel fee:
+
+8.
+College_name :NIMS University, Jaipur
+courses: B.Tech , B.Sc ,M.Sc
+Branches:Computer Science and Engineering,Computer And Communication Engineering,Biotechnology, Information Technology , Computer Science and Biosciences , Data Sciences,Electrical And Electronics Engineering,Electrical And Computer Engineering,Civil Engineering
+NIRF rank: 101-150
+Fee : 2,00,000 - 5,00,000
+City:Jaipur
+Hostel fee:	400000
+
+9.
+College_name :JECRC University - [JU], Jaipur
+courses:B.Tech ,Ph.D,MBA,BCA,M.Sc
+Branches:Computer Science and Engineering , Civil Engineering ,Artificial Intelligence & Machine Learning , Electronics & Communication Engineering,Computer Science and Business Systems,Cyber Security,Electric Vehicle Technology,Cloud Computing,Blockchain 
+NIRF rank:193
+Fee :2,20,000
+City:Jaipur
+Hostel fee: 
+ 
+10.
+College_name :SunRise University - [SRU], Alwar
+courses:B.Tech , B.Sc , M.Sc
+Branches:Artificial Intelligence , Agricultural Engineering,Robotics,Blockchain
+NIRF rank:
+Fee :73,200
+City: Alwar
+Hostel fee:₹65,000 - ₹72,000
+

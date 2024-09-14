@@ -1,0 +1,1 @@
+{"type":"module","dependencies":{"axios":"^1.7.7","config":"^3.3.12","dotenv":"^16.4.5","fs":"^0.0.1-security","groq":"^3.57.3","groq-sdk":"^0.7.0","path":"^0.12.7","pinecone-client":"^2.0.0","replicate":"^0.32.1"}}
