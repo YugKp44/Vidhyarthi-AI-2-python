@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
-import transformers
-import torch
+from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone, ServerlessSpec
 
 # Load environment variables
@@ -10,7 +9,6 @@ load_dotenv()
 api_key = os.getenv('PINECONE_API_KEY')
 environment = os.getenv('PINECONE_ENVIRONMENT')
 index_name = os.getenv('PINECONE_INDEX_NAME')
-hf_token = os.getenv('HUGGINGFACE_API_TOKEN')
 
 # Initialize Pinecone client
 pc = Pinecone(api_key=api_key)
@@ -20,30 +18,17 @@ try:
     if index_name not in pc.list_indexes().names():
         pc.create_index(
             name=index_name,
-            dimension=4096,  # Adjust dimension based on model
+            dimension=384,  # Dimension of the embeddings
             metric='cosine',  # Use cosine similarity
             spec=ServerlessSpec(
                 cloud='aws',
                 region=environment
             )
         )
-        print(f"Created Pinecone index '{index_name}' with dimension 4096.")
+        print(f"Created Pinecone index '{index_name}' with dimension 384.")
 except Exception as e:
     print(f"Error creating Pinecone index: {e}")
     exit(1)
-
-# Authenticate with Hugging Face
-from huggingface_hub import login
-
-if hf_token:
-    login(token=hf_token)
-else:
-    raise ValueError("HUGGINGFACE_API_TOKEN environment variable not set")
-
-# Initialize the Llama model for text embedding
-model_id = "meta-llama/Meta-Llama-3-70B-Instruct"
-tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
-model = transformers.AutoModel.from_pretrained(model_id, torch_dtype=torch.bfloat16, device_map="auto")
 
 # Function to split text into chunks
 def chunk_text(text, chunk_size=512):
@@ -63,14 +48,10 @@ def chunk_text(text, chunk_size=512):
 
     return chunks
 
-# Function to get embeddings using Meta-Llama-3
+# Function to get embeddings using Hugging Face
 def get_embeddings(text):
-    inputs = tokenizer(text, return_tensors='pt', padding=True, truncation=True)
-    with torch.no_grad():
-        outputs = model(**inputs)
-    # Use the mean of the last hidden state as embeddings
-    embeddings = outputs.last_hidden_state.mean(dim=1)  # Averaging across tokens
-    return embeddings.squeeze().tolist()
+    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    return model.encode(text)
 
 # Function to store embeddings in Pinecone
 def store_in_pinecone(embeddings, chunk, id):
@@ -78,7 +59,7 @@ def store_in_pinecone(embeddings, chunk, id):
         index = pc.Index(index_name)  # Use Index class to access the index
         vector = {
             'id': id,
-            'values': embeddings,  # Convert tensor to list
+            'values': embeddings.tolist(),  # Convert numpy array to list
             'metadata': {'text': chunk}
         }
         index.upsert([vector])
@@ -95,6 +76,7 @@ def process_text(text, file_name):
 
 # Function to read and process files from a directory
 def process_directory(directory_path):
+    import os
     from pathlib import Path
 
     try:
@@ -115,14 +97,14 @@ def process_directory(directory_path):
 # Function to search Pinecone with a user's query
 def search_in_pinecone(query):
     embeddings = get_embeddings(query)
-    if len(embeddings) == 0:  # Check if embeddings are empty
+    if embeddings.size == 0:  # Check if embeddings are empty
         print('Failed to get embeddings for the query.')
         return
 
     try:
         index = pc.Index(index_name)  # Use Index class to access the index
         query_response = index.query(
-            vector=embeddings,
+            vector=embeddings.tolist(),
             top_k=4,  # Limit to top 4 results
             include_metadata=True
         )

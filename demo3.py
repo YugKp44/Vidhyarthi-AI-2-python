@@ -1,8 +1,9 @@
 import os
 from dotenv import load_dotenv
-import transformers
-import torch
+from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone, ServerlessSpec
+
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 # Load environment variables
 load_dotenv()
@@ -10,7 +11,6 @@ load_dotenv()
 api_key = os.getenv('PINECONE_API_KEY')
 environment = os.getenv('PINECONE_ENVIRONMENT')
 index_name = os.getenv('PINECONE_INDEX_NAME')
-hf_token = os.getenv('HUGGINGFACE_API_TOKEN')
 
 # Initialize Pinecone client
 pc = Pinecone(api_key=api_key)
@@ -20,33 +20,23 @@ try:
     if index_name not in pc.list_indexes().names():
         pc.create_index(
             name=index_name,
-            dimension=4096,  # Adjust dimension based on model
+            dimension=384,  # Dimension of the embeddings
             metric='cosine',  # Use cosine similarity
             spec=ServerlessSpec(
                 cloud='aws',
                 region=environment
             )
         )
-        print(f"Created Pinecone index '{index_name}' with dimension 4096.")
+        print(f"Created Pinecone index '{index_name}' with dimension 384.")
 except Exception as e:
     print(f"Error creating Pinecone index: {e}")
     exit(1)
 
-# Authenticate with Hugging Face
-from huggingface_hub import login
-
-if hf_token:
-    login(token=hf_token)
-else:
-    raise ValueError("HUGGINGFACE_API_TOKEN environment variable not set")
-
-# Initialize the Llama model for text embedding
-model_id = "meta-llama/Meta-Llama-3-70B-Instruct"
-tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
-model = transformers.AutoModel.from_pretrained(model_id, torch_dtype=torch.bfloat16, device_map="auto")
+# Initialize model
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
 # Function to split text into chunks
-def chunk_text(text, chunk_size=512):
+def chunk_text(text, chunk_size=438):
     words = text.split(' ')
     chunks = []
     chunk = ''
@@ -63,22 +53,17 @@ def chunk_text(text, chunk_size=512):
 
     return chunks
 
-# Function to get embeddings using Meta-Llama-3
+# Function to get embeddings using Hugging Face
 def get_embeddings(text):
-    inputs = tokenizer(text, return_tensors='pt', padding=True, truncation=True)
-    with torch.no_grad():
-        outputs = model(**inputs)
-    # Use the mean of the last hidden state as embeddings
-    embeddings = outputs.last_hidden_state.mean(dim=1)  # Averaging across tokens
-    return embeddings.squeeze().tolist()
+    return model.encode(text)
 
 # Function to store embeddings in Pinecone
 def store_in_pinecone(embeddings, chunk, id):
     try:
-        index = pc.Index(index_name)  # Use Index class to access the index
+        index = pc.Index(index_name)  # Access the index
         vector = {
             'id': id,
-            'values': embeddings,  # Convert tensor to list
+            'values': embeddings.tolist(),  # Convert numpy array to list
             'metadata': {'text': chunk}
         }
         index.upsert([vector])
@@ -115,24 +100,28 @@ def process_directory(directory_path):
 # Function to search Pinecone with a user's query
 def search_in_pinecone(query):
     embeddings = get_embeddings(query)
-    if len(embeddings) == 0:  # Check if embeddings are empty
+    if embeddings.size == 0:  # Check if embeddings are empty
         print('Failed to get embeddings for the query.')
         return
 
     try:
-        index = pc.Index(index_name)  # Use Index class to access the index
+        index = pc.Index(index_name)  # Access the index
         query_response = index.query(
-            vector=embeddings,
-            top_k=4,  # Limit to top 4 results
+            vector=embeddings.tolist(),
+            top_k=1,  # Limit to top 1 result
             include_metadata=True
         )
 
         if query_response['matches']:
-            print('Search Results:')
+            print("🔍 Similar Results Found:")
+            print("=" * 50)
             for idx, match in enumerate(query_response['matches']):
-                print(f"{idx + 1}. Score: {match['score']}")
-                print(f"Text: {match['metadata']['text']}")
-                print('--------------------------------')
+                print(f"\nResult {idx + 1}:")
+                print("-" * 20)
+                print(f"📝 Similar Text: {match['metadata']['text']}")
+                print("-" * 20)
+            print("=" * 50)
+            print("✅ End of Similar Results")
         else:
             print('No similar results found.')
     except Exception as e:
