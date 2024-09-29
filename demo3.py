@@ -1,13 +1,14 @@
 import os
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone, ServerlessSpec
-
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+import streamlit as st
+from pathlib import Path
+import ollama  # Importing Ollama for using Nomic embeddings
 
 # Load environment variables
 load_dotenv()
 
+# Set environment variables for Pinecone
 api_key = os.getenv('PINECONE_API_KEY')
 environment = os.getenv('PINECONE_ENVIRONMENT')
 index_name = os.getenv('PINECONE_INDEX_NAME')
@@ -20,27 +21,48 @@ try:
     if index_name not in pc.list_indexes().names():
         pc.create_index(
             name=index_name,
-            dimension=384,  # Dimension of the embeddings
+            dimension=768,  # Change to match the model's embedding size (based on your chosen model)
             metric='cosine',  # Use cosine similarity
             spec=ServerlessSpec(
                 cloud='aws',
                 region=environment
             )
         )
-        print(f"Created Pinecone index '{index_name}' with dimension 384.")
+        st.success(f"Created Pinecone index '{index_name}' with dimension 768.")
+    else:
+        index = pc.Index(index_name)
+        # Get index stats to check the dimension
+        index_stats = index.describe_index_stats()
+        if index_stats['dimension'] != 768:
+            pc.delete_index(index_name)
+            pc.create_index(
+                name=index_name,
+                dimension=768,  # Ensure dimension matches embeddings
+                metric='cosine',
+                spec=ServerlessSpec(
+                    cloud='aws',
+                    region=environment
+                )
+            )
+            st.success(f"Recreated Pinecone index '{index_name}' with dimension 768.")
 except Exception as e:
-    print(f"Error creating Pinecone index: {e}")
+    st.error(f"Error creating Pinecone index: {e}")
     exit(1)
 
-# Initialize model
-model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+# Initialize Ollama for embeddings using Nomic
+  # Initialize with Nomic model
+
+# Function to get embeddings using Nomic
+def get_embeddings(text):
+    response = ollama.embeddings(model='nomic-embed-text',prompt=text)  # Use Nomic model for embeddings
+    return response['embedding']  # Adjust based on response structure
 
 # Function to split text into chunks
-def chunk_text(text, chunk_size=438):
+def chunk_text(text, chunk_size=420):  # Define chunk size
     words = text.split(' ')
     chunks = []
     chunk = ''
-
+    
     for word in words:
         if (len(chunk) + len(word)) <= chunk_size:
             chunk += f'{word} '
@@ -53,17 +75,13 @@ def chunk_text(text, chunk_size=438):
 
     return chunks
 
-# Function to get embeddings using Hugging Face
-def get_embeddings(text):
-    return model.encode(text)
-
 # Function to store embeddings in Pinecone
 def store_in_pinecone(embeddings, chunk, id):
     try:
         index = pc.Index(index_name)  # Access the index
         vector = {
             'id': id,
-            'values': embeddings.tolist(),  # Convert numpy array to list
+            'values': embeddings,  # Assuming embeddings is already a list
             'metadata': {'text': chunk}
         }
         index.upsert([vector])
@@ -71,7 +89,7 @@ def store_in_pinecone(embeddings, chunk, id):
     except Exception as e:
         print(f"Error storing data in Pinecone: {e}")
 
-# Main function to process text and store embeddings
+# Function to process text and store embeddings
 def process_text(text, file_name):
     chunks = chunk_text(text)
     for i, chunk in enumerate(chunks):
@@ -80,8 +98,6 @@ def process_text(text, file_name):
 
 # Function to read and process files from a directory
 def process_directory(directory_path):
-    from pathlib import Path
-
     try:
         files = os.listdir(directory_path)
         for file in files:
@@ -97,40 +113,50 @@ def process_directory(directory_path):
     except Exception as e:
         print(f"Error reading directory: {e}")
 
+# Pre-train the model with text files (backend)
+def pre_train_with_files():
+    directory_path = './documents'  # Your directory with text files
+    process_directory(directory_path)
+    print("Text files have been processed and stored in Pinecone.")
+
 # Function to search Pinecone with a user's query
 def search_in_pinecone(query):
     embeddings = get_embeddings(query)
-    if embeddings.size == 0:  # Check if embeddings are empty
-        print('Failed to get embeddings for the query.')
+    if not embeddings:  # Check if embeddings are empty
+        st.warning('Failed to get embeddings for the query.')
         return
 
     try:
         index = pc.Index(index_name)  # Access the index
         query_response = index.query(
-            vector=embeddings.tolist(),
-            top_k=1,  # Limit to top 1 result
+            vector=embeddings,
+            top_k=1,  # Return top result
             include_metadata=True
         )
 
         if query_response['matches']:
-            print("🔍 Similar Results Found:")
-            print("=" * 50)
+            st.markdown("### 🔍 Similar Results Found:")
             for idx, match in enumerate(query_response['matches']):
-                print(f"\nResult {idx + 1}:")
-                print("-" * 20)
-                print(f"📝 Similar Text: {match['metadata']['text']}")
-                print("-" * 20)
-            print("=" * 50)
-            print("✅ End of Similar Results")
+                st.markdown(f"**Result {idx + 1}:**")
+                st.markdown(f"📝 **Similar Text:** {match['metadata']['text']}")
         else:
-            print('No similar results found.')
+            st.warning('No similar results found.')
     except Exception as e:
-        print(f"Error searching Pinecone: {e}")
+        st.error(f"Error searching Pinecone: {e}")
 
-# Example usage
-directory_path = './documents'
-process_directory(directory_path)
+# Streamlit UI
 
-# Example search query
-user_query = 'CAN YOU GIVE ME INFORMATION ABOUT IITJ,JODHPUR?'
-search_in_pinecone(user_query)
+st.title("VIDHYARTHI AI")
+
+# Input field for user query
+st.markdown("### Ask Questions About Colleges")
+user_query = st.text_input("Type your query here:")
+
+if st.button("Search"):
+    if user_query:
+        search_in_pinecone(user_query)
+    else:
+        st.warning("Please enter a query to search.")
+
+# Backend process (pre-training with text files)
+pre_train_with_files()
